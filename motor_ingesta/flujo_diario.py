@@ -2,9 +2,9 @@ import json
 from datetime import timedelta
 
 # imports echos por mi
-# from motor_ingesta import MotorIngesta
-# from agregaciones import aniade_hora_utc, aniade_intervalos_por_aeropuerto
-#from loguru import logger
+from motor_ingesta.motor_ingesta import MotorIngesta
+from motor_ingesta.agregaciones import aniade_hora_utc, aniade_intervalos_por_aeropuerto
+from loguru import logger
 ###
 from pyspark.sql import SparkSession, functions as F
 
@@ -14,7 +14,7 @@ class FlujoDiario:
     def __init__(self, config_file: str):
         """
         Completa la documentación
-        :param config_file:
+        :param config_file: C:/Users/flore/Desktop/spark-tarea-final-master/config/config.json
         """
         # Leer como diccionario el fichero json indicado en la ruta config_file, usando json.load(f) del paquete json
         # y almacenarlo en self.config. Además, crear la SparkSession si no existiese usando
@@ -28,8 +28,8 @@ class FlujoDiario:
     def procesa_diario(self, data_file: str):
         """
         Completa la documentación
-        :param data_file:
-        :return:
+        :param data_file:  C:/Users/flore/Desktop/spark-tarea-final-master/data/2023-01-01.json
+        :return: 
         """
 
         # raise NotImplementedError("completa el código de esta función")   # borra esta línea cuando resuelvas
@@ -60,7 +60,7 @@ class FlujoDiario:
             dia_previo = dia_actual - timedelta(days=1)
             try:
                 #flights_previo = spark.read.table(...).where(F.col(...) == ...)
-                flights_previo = spark.read.table(self.config["output_table"]).where(F.col("FlightDate") == dia_previo)
+                flights_previo = self.spark.read.table(self.config["output_table"]).where(F.col("FlightDate") == dia_previo)
                 logger.info(f"Leída partición del día {dia_previo} con éxito")
             except Exception as e:
                 logger.info(f"No se han podido leer datos del día {dia_previo}: {str(e)}")
@@ -98,12 +98,11 @@ class FlujoDiario:
             raise e
 
 
-if __name__ == '__main__':
-    #ruta = dbutils.fs.ls("abfss://tareaspark@databrickscontain.dfs.core.windows.net")[0].path
-    #path_config_flujo_diario = "/Workspace/Repos/flgarc01@ucm.es/spark-tarea-final-florentino/config/config.json"     # ruta del fichero config.json, que no pertenece al paquete
-    #path_json_primer_dia = "abfss://tareaspark@databrickscontain.dfs.core.windows.net/2023-01-01.json" 
-    spark = SparkSession.builder.getOrCreate()   # sólo si lo ejecutas localmente
-    flujo = FlujoDiario(path_config_flujo_diario)
-    flujo.procesa_diario(path_json_primer_dia)
+# if __name__ == '__main__':
+#     path_config_flujo_diario = "/Workspace/Repos/flgarc01@ucm.es/spark-tarea-final-florentino/config/config.json"     # ruta del fichero config.json, que no pertenece al paquete
+#     path_json_primer_dia = "abfss://tareaspark@databrickscontain.dfs.core.windows.net/2023-01-01.json" 
+#     spark = SparkSession.builder.getOrCreate()   # sólo si lo ejecutas localmente
+#     flujo = FlujoDiario(path_config_flujo_diario)
+#     flujo.procesa_diario(path_json_primer_dia)
 
     # Recuerda que puedes crear el wheel ejecutando en la línea de comandos: python setup.py bdist_wheel

@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from pyspark.sql import SparkSession, DataFrame as DF, functions as F, Window
-
+#from motor_ingesta.motor_ingesta import MotorIngesta
+#from flujo_diario import FlujoDiario
 
 def aniade_hora_utc(spark: SparkSession, df: DF) -> DF:
     """
@@ -108,3 +109,9 @@ def aniade_intervalos_por_aeropuerto(df: DF) -> DF:
     )
     return df_with_next_flight
 
+# if __name__ == '__main__':
+#     path_config_flujo_diario = "C:/Users/flore/Desktop/spark-tarea-final-master/config/config.json"     # ruta del fichero config.json, que no pertenece al paquete
+#     path_json_primer_dia = "C:/Users/flore/Desktop/spark-tarea-final-master/data/2023-01-01.json"  
+#     spark = SparkSession.builder.getOrCreate()   # sólo si lo ejecutas localmente
+#     flujo = FlujoDiario(path_config_flujo_diario)
+#     flujo.procesa_diario(path_json_primer_dia)
