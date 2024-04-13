@@ -1,7 +1,5 @@
-
 import json
 from pyspark.sql import DataFrame as DF, functions as F, SparkSession
-
 
 class MotorIngesta:
     """
@@ -18,8 +16,8 @@ class MotorIngesta:
     def ingesta_fichero(self, json_path: str) -> DF:
         """
         Completar docstring
-        :param json_path:
-        :return:
+        :param json_path: abfss://tareaspark@databrickscontain.dfs.core.windows.net/2023-01-01.json
+        :return: resultado_df
         """
         # Leemos el JSON como DF, tratando de inferir el esquema, y luego lo aplanamos.
         # Por último nos quedamos con las columnas indicadas en el fichero de configuración,
@@ -33,12 +31,12 @@ class MotorIngesta:
         # Para incluir también el campo "comment" como metadatos de la columna, podemos hacer:
         # F.col(...).cast(...).alias(..., metadata={"comment": ...})
 
-        flights_day_df = spark.read....
+        flights_day_df = self.spark.read.option("inferSchema", True).json(json_path)
 
-        aplanado_df = ...
-        lista_obj_column = [ ... for diccionario in self.config["data_columns"] ]
-        resultado_df = aplanado_df.select(...)
-        return ...
+        aplanado_df = self.aplana_df(flights_day_df)
+        lista_obj_column = [F.col(diccionario["name"]).cast(diccionario["type"]).alias(diccionario["name"], metadata={"comment": diccionario["comment"]}) for diccionario in self.config["data_columns"]]
+        resultado_df = aplanado_df.select(*lista_obj_column)
+        return resultado_df
 
 
     @staticmethod
@@ -70,3 +68,4 @@ class MotorIngesta:
 
         new_df = df.select(*to_select)
         return MotorIngesta.aplana_df(new_df) if recurse else new_df
+

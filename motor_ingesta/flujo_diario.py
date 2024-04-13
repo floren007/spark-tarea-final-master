@@ -1,7 +1,11 @@
 import json
 from datetime import timedelta
-from loguru import logger
 
+# imports echos por mi
+# from motor_ingesta import MotorIngesta
+# from agregaciones import aniade_hora_utc, aniade_intervalos_por_aeropuerto
+#from loguru import logger
+###
 from pyspark.sql import SparkSession, functions as F
 
 
@@ -16,8 +20,9 @@ class FlujoDiario:
         # y almacenarlo en self.config. Además, crear la SparkSession si no existiese usando
         # SparkSession.builder.getOrCreate() que devolverá la sesión existente, o creará una nueva si no existe ninguna
 
-        self.spark = None     # sustituye None por lo adecuado para recuperar la SparkSession existente o crear una
-        self.config = None    # sustituye None por lo adecuado para leer el fichero de config como diccionario
+        self.spark = SparkSession.builder.getOrCreate()     # sustituye None por lo adecuado para recuperar la SparkSession existente o crear una
+        self.config = self.config = json.load(open(config_file))
+    # sustituye None por lo adecuado para leer el fichero de config como diccionario
 
 
     def procesa_diario(self, data_file: str):
@@ -37,11 +42,12 @@ class FlujoDiario:
             # Conviene cachear el DF flights_df así como utilizar el número de particiones indicado en
             # config["output_partitions"]
 
-            motor_ingesta = ...
-            flights_df = ...
-
+            motor_ingesta = MotorIngesta(self.config)
+            flights_df = motor_ingesta.ingesta_fichero(data_file).cache()
             # Paso 1. Invocamos al método para añadir la hora de salida UTC
-            flights_with_utc = ...                # reemplaza por la llamada adecuada
+            flights_with_utc = aniade_hora_utc(self.spark,flights_df)              # reemplaza por la llamada adecuada
+            print(flights_with_utc)
+           
 
 
             # -----------------------------
@@ -53,7 +59,8 @@ class FlujoDiario:
             dia_actual = flights_df.first().FlightDate
             dia_previo = dia_actual - timedelta(days=1)
             try:
-                flights_previo = spark.read.table(...).where(F.col(...) == ...)
+                #flights_previo = spark.read.table(...).where(F.col(...) == ...)
+                flights_previo = spark.read.table(self.config["output_table"]).where(F.col("FlightDate") == dia_previo)
                 logger.info(f"Leída partición del día {dia_previo} con éxito")
             except Exception as e:
                 logger.info(f"No se han podido leer datos del día {dia_previo}: {str(e)}")
@@ -64,7 +71,7 @@ class FlujoDiario:
                 # OJO: hacer select(flights_previo.columns) para tenerlas en el mismo orden antes de
                 # la unión, ya que la columna de partición se había ido al final al escribir
 
-                df_unido = ...
+                df_unido = (F.lit(None).cast("string"), F.lit(None).cast("string")).union(flights_previo.select(flights_previo.columns))
                 # Spark no permite escribir en la misma tabla de la que estamos leyendo. Por eso salvamos
                 df_unido.write.mode("overwrite").saveAsTable("tabla_provisional")
                 df_unido = self.spark.read.table("tabla_provisional")
@@ -73,14 +80,14 @@ class FlujoDiario:
                 df_unido = flights_with_utc           # lo dejamos como está
 
             # Paso 3. Invocamos al método para añadir información del vuelo siguiente
-            df_with_next_flight = ...
+            df_with_next_flight = aniade_intervalos_por_aeropuerto(df_unido)
 
             # Paso 4. Escribimos el DF en la tabla externa config["output_table"] con ubicación config["output_path"], con
             # el número de particiones indicado en config["output_partitions"]
             # df_with_next_flight.....(...)..write.mode("overwrite").option("partitionOverwriteMode", "dynamic")....
             df_with_next_flight\
-                .coalesce(...)\
-                .write...
+                .coalesce(self.config["output_partitions"])\
+                .write.mode("overwrite").option("partitionOverwriteMode", "dynamic").saveAsTable(self.config["output_table"])
 
 
             # Borrar la tabla provisional si la hubiéramos creado
@@ -92,8 +99,11 @@ class FlujoDiario:
 
 
 if __name__ == '__main__':
+    #ruta = dbutils.fs.ls("abfss://tareaspark@databrickscontain.dfs.core.windows.net")[0].path
+    #path_config_flujo_diario = "/Workspace/Repos/flgarc01@ucm.es/spark-tarea-final-florentino/config/config.json"     # ruta del fichero config.json, que no pertenece al paquete
+    #path_json_primer_dia = "abfss://tareaspark@databrickscontain.dfs.core.windows.net/2023-01-01.json" 
     spark = SparkSession.builder.getOrCreate()   # sólo si lo ejecutas localmente
-    flujo = ...
-    flujo.procesa_diario(...)
+    flujo = FlujoDiario(path_config_flujo_diario)
+    flujo.procesa_diario(path_json_primer_dia)
 
     # Recuerda que puedes crear el wheel ejecutando en la línea de comandos: python setup.py bdist_wheel
