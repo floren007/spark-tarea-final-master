@@ -8,7 +8,7 @@ class MotorIngesta:
     def __init__(self, config: dict):
         """
         Completar docstring
-        :param config_file:
+        :param config_file: ../config/config.json
         """
         self.config = config
         self.spark = SparkSession.builder.getOrCreate()
@@ -16,7 +16,7 @@ class MotorIngesta:
     def ingesta_fichero(self, json_path: str) -> DF:
         """
         Completar docstring
-        :param json_path: abfss://tareaspark@databrickscontain.dfs.core.windows.net/2023-01-01.json
+        :param json_path: ../data/2023-01-01.json
         :return: resultado_df
         """
         # Leemos el JSON como DF, tratando de inferir el esquema, y luego lo aplanamos.
@@ -30,8 +30,8 @@ class MotorIngesta:
 
         # Para incluir también el campo "comment" como metadatos de la columna, podemos hacer:
         # F.col(...).cast(...).alias(..., metadata={"comment": ...})
-
-        flights_day_df = self.spark.read.option("inferSchema", True).json(json_path)
+        spark = SparkSession.builder.getOrCreate()
+        flights_day_df = spark.read.option("inferSchema", True).json(json_path)
 
         aplanado_df = self.aplana_df(flights_day_df)
         lista_obj_column = [F.col(diccionario["name"]).cast(diccionario["type"]).alias(diccionario["name"], metadata={"comment": diccionario["comment"]}) for diccionario in self.config["data_columns"]]
@@ -69,3 +69,15 @@ class MotorIngesta:
         new_df = df.select(*to_select)
         return MotorIngesta.aplana_df(new_df) if recurse else new_df
 
+if __name__ == '__main__':
+    path_config_flujo_diario = "../config/config.json"     # ruta del fichero config.json, que no pertenece al paquete
+    path_json_primer_dia = "../data/2023-01-01.json"           # ruta del fichero JSON de un día concreto que queremos ingestar, en nuestro caso 2023-01-01.json
+
+    flujo_diario = None
+    motor_ingesta = None
+    flights_df = None
+
+
+    # YOUR CODE HERE
+    
+    flights_df = MotorIngesta.ingesta_fichero(path_config_flujo_diario,path_json_primer_dia)
