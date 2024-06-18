@@ -79,5 +79,6 @@ if __name__ == '__main__':
 
 
     # YOUR CODE HERE
-    
-    flights_df = MotorIngesta.ingesta_fichero(path_config_flujo_diario,path_json_primer_dia)
+    mi = MotorIngesta('../config/config.json')
+
+    flights_df = mi.ingesta_fichero(path_json_primer_dia)
